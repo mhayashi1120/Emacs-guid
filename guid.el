@@ -4,7 +4,7 @@
 ;; Keywords: data
 ;; URL: https://github.com/mhayashi1120/Emacs-guid/raw/master/guid.el
 ;; Emacs: GNU Emacs 24 or later
-;; Version: 0.9.1
+;; Version: 0.9.2
 ;; Package-Requires: ((emacs "24") (cl-lib "0.3"))
 
 ;; This program is free software; you can redistribute it and/or
@@ -39,8 +39,32 @@
 ;;   defined at rfc4122 Section 4.4
 
 ;; * `guid-update-*' function is not simply replace GUID.
-;;   These function keep identity if duplicated GUID exists
-;;   while a one command.
+;;   These function keep identity if there is duplicated GUID
+;;   while the function execution.
+
+;; * This package uses `random' function. It's user's responsibility
+;;   to generate well quality PRNG from this function.
+
+;;   Generally speaking, simply call:
+
+;;     M-x guid-generate-string
+
+;;   Or
+
+;;     (guid-generate-string)
+
+;;   ___BAD___ example:
+;;   This generate same GUID every time.
+
+;;     (progn
+;;       (random "")
+;;       (guid-generate-string))
+
+;;   __NOT SO BAD__ example:
+
+;;     (progn
+;;       (random t)
+;;       (guid-generate-string))
 
 ;; * Update all GUID string in selected buffer.
 ;;
@@ -108,7 +132,6 @@
   :group 'guid
   :type '(choice
           ;; Microsoft implementation
-          ;; Strictly speaking, this is not `uuid' but for convenient.
           (const guid)
           ;; 4.4.  Algorithms for Creating a UUID from Truly Random or
           ;;       Pseudo-Random Numbers
@@ -185,7 +208,9 @@
 ;;;###autoload
 (defun guid-generate-string (&optional upcase algorithm)
   "Create new uuid string.
-Copy that GUID/UUID if interactive call."
+Copy that GUID/UUID if interactive call.
+If optional prefix arg UPCASE non-nil, created uuid is upper case.
+If optional ALGORITHM non-nil, overwrite `guid-generate-default-algorithm' ."
   (interactive "P")
   (let* ((vec (guid-generate algorithm))
          (args (append vec nil))

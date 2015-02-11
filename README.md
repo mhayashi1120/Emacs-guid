@@ -18,8 +18,40 @@ desired. And put the following expression into your ~/.emacs.
   defined at rfc4122 Section 4.4
 
 * `guid-update-*' function is not simply replace GUID.
-  These function keep identity if duplicated GUID exists
-  while a one command.
+  These function keep identity if there is duplicated GUID
+  while the function execution.
+
+* This package uses `random` function. It's user's responsibility
+  to generate well quality PRNG from this function.
+
+  Generally speaking, simply call:
+
+```
+M-x guid-generate-string
+```
+
+  Or
+
+```
+(guid-generate-string)
+```
+
+  ___BAD___ example:
+  This generate same GUID every time.
+
+```
+(progn
+  (random "")
+  (guid-generate-string))
+```
+
+  __NOT SO BAD__ example:
+
+```
+(progn
+  (random t)
+  (guid-generate-string))
+```
 
 * Update all GUID string in selected buffer.
 
