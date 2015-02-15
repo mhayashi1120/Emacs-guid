@@ -319,12 +319,14 @@ This function return alist which key is previous uuid, value is new uuid.
 \(fn FILE &optional algorithm)"
   (interactive "fFile to update GUID/UUID: ")
   (with-temp-buffer
+    (set-buffer-multibyte nil)
     (let ((coding-system-for-read 'binary))
       (insert-file-contents file))
     (set-buffer-modified-p nil)
     (setq done-alist (guid-update-buffer nil algorithm done-alist))
     (when (buffer-modified-p)
-      (write-region nil nil file nil (and no-msg 'no-msg))))
+      (let ((coding-system-for-write 'binary))
+        (write-region nil nil file nil (and no-msg 'no-msg)))))
   done-alist)
 
 (defun guid--update-directory-0 (directory &optional algorithm done-alist no-msg)
