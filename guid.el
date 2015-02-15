@@ -147,7 +147,7 @@
   "`format' string to serialize GUID/UUID data.")
 
 (eval-and-compile
-  (defconst guid--string-regexp
+  (defconst guid-basic-string-regexp
     (eval-when-compile
       (mapconcat
        'identity
@@ -170,9 +170,9 @@
   (eval-when-compile
     (concat
      "\\`\\(?:"
-     (concat "\\(" guid--string-regexp "\\)")
+     (concat "\\(" guid-basic-string-regexp "\\)")
      "\\|"
-     (concat "{\\(" guid--string-regexp "\\)}")
+     (concat "{\\(" guid-basic-string-regexp "\\)}")
      "\\)"
      "\\'")))
 
@@ -280,7 +280,7 @@ If optional ALGORITHM non-nil, overwrite `guid-generate-default-algorithm' ."
 ;;;###autoload
 (defun guid-update-buffer (&optional buffer algorithm done-alist)
   "Update all uuid in BUFFER.
-This uuid must match to `guid--string-regexp' with word boundary.
+This uuid must match to `guid-basic-string-regexp' with word boundary.
 Preserve identity if there is duplicate GUID/UUID. (Indicate same GUID/UUID)
 This function return alist which key is previous uuid, value is new uuid.
 
@@ -291,7 +291,7 @@ This function return alist which key is previous uuid, value is new uuid.
       (save-restriction
         (widen)
         (goto-char (point-min))
-        (let ((regexp (concat "\\b" guid--string-regexp "\\b")))
+        (let ((regexp (concat "\\b" guid-basic-string-regexp "\\b")))
           (while (re-search-forward regexp nil t)
             (let* ((old (match-string 0))
                    (upper-p (string= (upcase old) old))
