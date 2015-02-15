@@ -146,14 +146,15 @@
      "-"))
   "`format' string to serialize GUID/UUID data.")
 
-(defconst guid--string-regexp
-  (eval-when-compile
-    (mapconcat
-     'identity
-     (guid--map-generator
-      (lambda (n) (format "[a-fA-F0-9]\\{%d\\}" (* n 2))))
-     "-"))
-  "Regexp that match to GUID/UUID.")
+(eval-and-compile
+  (defconst guid--string-regexp
+    (eval-when-compile
+      (mapconcat
+       'identity
+       (guid--map-generator
+        (lambda (n) (format "[a-fA-F0-9]\\{%d\\}" (* n 2))))
+       "-"))
+    "Regexp that match to GUID/UUID."))
 
 ;; for grep
 (defconst guid--traditional-regexp
@@ -165,11 +166,40 @@
      "-"))
   "Regexp that works in any of regexp engine.")
 
-(defun guid-rassoc (key alist)
+(defconst guid--string-fuzzy-regexp
+  (eval-when-compile
+    (concat
+     "\\`\\(?:"
+     (concat "\\(" guid--string-regexp "\\)")
+     "\\|"
+     (concat "{\\(" guid--string-regexp "\\)}")
+     "\\)"
+     "\\'")))
+
+;; 4.1.3.  Version
+(defconst guid-uuid-version-alist
+  '((?\x01 . 1)
+    (?\x02 . 2)
+    (?\x03 . 3)
+    (?\x04 . 4)
+    (?\x05 . 5)))
+
+(defun guid--rassoc (key alist)
   (cl-loop with searching = (upcase key)
            for kv in alist
            if (string= (upcase (cdr kv)) searching)
            return kv))
+
+(defun guid--format (uuid-bin)
+  (let ((args (append uuid-bin nil)))
+    (apply 'format guid--string-format args)))
+
+(defun guid--set-uuid-version (uuid-bin version)
+  (let ((ver (car (rassq version guid-uuid-version-alist))))
+    (unless ver
+      (error "Not a supported version %s" version))
+    (aset uuid-bin 6 (logior (ash ver 4) (logand ?\x0f (aref uuid-bin 6))))
+    uuid-bin))
 
 (defun guid--mask-result (16bytes &optional algorithm)
   (cl-ecase (or algorithm guid-generate-default-algorithm)
@@ -181,8 +211,34 @@
      ;; Set the four most significant bits (bits 12 through 15) of the
      ;; time_hi_and_version field to the 4-bit version number from
      ;; Section 4.1.3.
-     (aset 16bytes 6 (logior ?\x40 (logand ?\x0f (aref 16bytes 6))))))
+     (guid--set-uuid-version 16bytes 4)))
   16bytes)
+
+;;;###autoload
+(defun guid-uuid-version (uuid)
+  (unless (string-match guid--string-fuzzy-regexp uuid)
+    (error "Not a valid uuid"))
+  (setq uuid (or (match-string 1 uuid) (match-string 2 uuid)))
+  (let* ((bin (guid-string-to-binary uuid))
+         (tm-hi-ver0 (aref bin 6))
+         (ver-field (ash tm-hi-ver0 -4))
+         (version-def (assq ver-field guid-uuid-version-alist)))
+    (cdr version-def)))
+
+;;;###autoload
+(defun guid-string-to-binary (uuid)
+  (let ((start 0)
+        (bin (make-vector 16 nil))
+        (idx 0))
+    (while (string-match "[0-9a-fA-F]\\{2\\}" uuid start)
+      (let* ((hex (match-string 0 uuid))
+             (octet (string-to-number hex 16)))
+        (aset bin idx octet)
+        (setq start (match-end 0)))
+      (setq idx (1+ idx)))
+    (unless (= idx 16)
+      (error "Invalid uuid"))
+    bin))
 
 ;;;###autoload
 (defun guid-string-p (string)
@@ -213,8 +269,7 @@ If optional prefix arg UPCASE non-nil, created uuid is upper case.
 If optional ALGORITHM non-nil, overwrite `guid-generate-default-algorithm' ."
   (interactive "P")
   (let* ((vec (guid-generate algorithm))
-         (args (append vec nil))
-         (string (apply 'format guid--string-format args)))
+         (string (guid--format vec)))
     (when upcase
       (setq string (upcase string)))
     (when (called-interactively-p 'interactive)
@@ -241,7 +296,7 @@ This function return alist which key is previous uuid, value is new uuid.
             (let* ((old (match-string 0))
                    (upper-p (string= (upcase old) old))
                    (tmp (assoc-string old done-alist t))
-                   (already-done (guid-rassoc old done-alist)))
+                   (already-done (guid--rassoc old done-alist)))
               (cond
                (tmp
                 (let ((new (cdr tmp)))
