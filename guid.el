@@ -243,7 +243,7 @@
 ;;;###autoload
 (defun guid-string-p (string)
   "Check STRING satisfy GUID/UUID format."
-  (let ((regexp (concat "\\`" guid--string-regexp "\\'")))
+  (let ((regexp guid--string-fuzzy-regexp))
     (and (string-match regexp string) t)))
 
 ;;;###autoload
@@ -299,9 +299,11 @@ This function return alist which key is previous uuid, value is new uuid.
                    (already-done (guid--rassoc old done-alist)))
               (cond
                (tmp
+                ;; refresh duplicated identity
                 (let ((new (cdr tmp)))
                   (replace-match (if upper-p (upcase new) new))))
                ((not already-done)
+                ;; replace guid first found
                 (let ((new (save-match-data
                              (guid-generate-string upper-p algorithm))))
                   (replace-match new)
