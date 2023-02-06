@@ -4,7 +4,7 @@
 ;; Keywords: data
 ;; URL: https://github.com/mhayashi1120/Emacs-guid
 ;; Emacs: GNU Emacs 24 or later
-;; Version: 0.9.4
+;; Version: 0.9.6
 ;; Package-Requires: ((emacs "24") (cl-lib "0.3"))
 
 ;; This program is free software; you can redistribute it and/or
@@ -227,16 +227,18 @@
 
 ;;;###autoload
 (defun guid-string-to-binary (uuid)
+  (setq uuid (replace-regexp-in-string "-" "" uuid))
   (let ((start 0)
         (bin (make-vector 16 nil))
         (idx 0))
-    (while (string-match "[0-9a-fA-F]\\{2\\}" uuid start)
+    (while (eq (string-match "[0-9a-fA-F]\\{2\\}" uuid start) start)
       (let* ((hex (match-string 0 uuid))
              (octet (string-to-number hex 16)))
         (aset bin idx octet)
         (setq start (match-end 0)))
       (setq idx (1+ idx)))
-    (unless (= idx 16)
+    (unless (and (= start (length uuid))
+                 (= idx 16))
       (error "Invalid uuid"))
     bin))
 
@@ -248,7 +250,7 @@
 
 ;;;###autoload
 (defun guid-generate (&optional algorithm)
-  "Create new uuid as vector."
+  "Create new uuid as a vector."
   (cl-loop with v = (make-vector 16 nil)
            with nbits = (cl-loop with acc = -1
                                  for i from 0
@@ -283,6 +285,10 @@ If optional ALGORITHM non-nil, overwrite `guid-generate-default-algorithm' ."
 This uuid must match to `guid-basic-string-regexp' with word boundary.
 Preserve identity if there is duplicate GUID/UUID. (Indicate same GUID/UUID)
 This function return alist which key is previous uuid, value is new uuid.
+About optional argument ALGORITHM, see `guid-generate-string' .
+
+Hidden argument DONE-ALIST is a programmable interface to pass through multiple
+ buffers which may hold same GUID/UUID .
 
 \(fn &optional buffer algorithm)"
   (interactive "bBuffer to update GUID/UUID: ")
@@ -313,8 +319,13 @@ This function return alist which key is previous uuid, value is new uuid.
 ;;;###autoload
 (defun guid-update-file (file &optional algorithm done-alist no-msg)
   "Update FILE uuid and save it.
-Other optional args are programmable interface.
+Other optional arguments are the programmable interface.
 This function return alist which key is previous uuid, value is new uuid.
+About optional argument ALGORITHM, see `guid-generate-string' .
+
+Hidden argument DONE-ALIST is a programmable interface to pass through multiple
+ files which may hold same GUID/UUID .
+Hidden argument NO-MSG control to suppress the message when write to file.
 
 \(fn FILE &optional algorithm)"
   (interactive "fFile to update GUID/UUID: ")
@@ -344,6 +355,7 @@ This function return alist which key is previous uuid, value is new uuid.
   "Update uuid in file under DIRECTORY recursively.
 Other optional args are programmable interface.
 This function return alist which key is previous uuid, value is new uuid.
+About optional argument ALGORITHM , see `guid-generate-string' .
 
 \(fn DIRECTORY &optional algorithm)"
   (interactive "DDirectory to update GUID/UUID: ")
