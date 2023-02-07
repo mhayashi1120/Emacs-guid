@@ -252,11 +252,6 @@
 (defun guid-generate (&optional algorithm)
   "Create new uuid as a vector."
   (cl-loop with v = (make-vector 16 nil)
-           with nbits = (cl-loop with acc = -1
-                                 for i from 0
-                                 until (zerop acc)
-                                 do (setq acc (lsh acc 1))
-                                 finally return (1- i))
            with lim = t
            for i from 0
            for ignore across  v
