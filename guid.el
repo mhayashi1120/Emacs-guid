@@ -4,7 +4,7 @@
 ;; Keywords: data
 ;; URL: https://github.com/mhayashi1120/Emacs-guid
 ;; Emacs: GNU Emacs 24 or later
-;; Version: 0.9.6
+;; Version: 0.9.7
 ;; Package-Requires: ((emacs "24") (cl-lib "0.3"))
 
 ;; This program is free software; you can redistribute it and/or
