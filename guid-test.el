@@ -15,6 +15,7 @@
 
 (ert-deftest recursive-0001 ()
   :tags '(guid)
+  ;; TODO FIXME This is not working on MacOS
   (random "")
   (unwind-protect
       (progn
